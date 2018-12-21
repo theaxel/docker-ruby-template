@@ -1,0 +1,44 @@
+version: "2.2"
+# https://docs.docker.com/docker-for-mac/osxfs/
+services:
+  redis:
+    image: redis:3.2-alpine
+    volumes:
+      - 'redis_data:/data'
+  db:
+    image: postgres:11-alpine
+    env_file: .env
+    environment:
+      POSTGRES_USER: $PG_USER
+      POSTGRES_PASSWORD: $PG_PASSWORD
+    volumes:
+      - 'pg_data:/var/lib/postgresql/data'
+  web:
+    build: .
+    command: bundle exec rackup
+    depends_on:
+      - 'db'
+      - 'redis'
+    volumes:
+      - 'gem_data:/bundles'
+    ports:
+      - '3000:3000'
+  bundle:
+    build: .
+    entrypoint: ["bundle"]
+    command: check
+    volumes:
+      - 'gem_data:/bundles'
+  rake:
+    build: .
+    entrypoint: ["rake"]
+    command: --version
+    depends_on:
+      - 'db'
+      - 'redis'
+    volumes:
+      - 'gem_data:/bundles'
+volumes:
+  redis_data: {}
+  pg_data: {}
+  gem_data: {}
